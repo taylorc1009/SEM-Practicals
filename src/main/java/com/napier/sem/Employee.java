@@ -42,7 +42,7 @@ public class Employee
      */
     public String manager;
 
-    public static void main(String[] args)
+    /*public static void main(String[] args)
     {
         // Create new Application
         App a = new App();
@@ -62,5 +62,5 @@ public class Employee
 
         // Disconnect from database
         a.disconnect();
-    }
+    }*/
 }

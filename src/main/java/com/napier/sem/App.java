@@ -5,6 +5,8 @@ import java.util.ArrayList;
 
 public class App
 {
+    private static Connection con;
+
     public static void main(String[] args)
     {
         // Create new Application
@@ -13,13 +15,14 @@ public class App
         // Connect to database
         a.connect();
 
+        displayEmployee(getSalariesByRole("Engineer"));
+
         // Disconnect from database
         a.disconnect();
     }
     /**
      * Connection to MySQL database.
-     */
-    private Connection con = null;
+    private Connection con = null;*/
 
     /**
      * Connect to the MySQL database.
@@ -44,7 +47,7 @@ public class App
             try
             {
                 // Wait a bit for db to start
-                Thread.sleep(30000);
+                Thread.sleep(10000);
                 // Connect to database
                 con = DriverManager.getConnection("jdbc:mysql://db:3306/employees?useSSL=false", "root", "password");
                 System.out.println("Successfully connected");
@@ -52,7 +55,7 @@ public class App
             }
             catch (SQLException sqle)
             {
-                System.out.println("Failed to connect to database attempt " + Integer.toString(i));
+                System.out.println("Failed to connect to database attempt " + i + 1);
                 System.out.println(sqle.getMessage());
             }
             catch (InterruptedException ie)
@@ -76,19 +79,24 @@ public class App
         }
     }
 
-    public void displayEmployee(Employee emp)
+    public static void displayEmployee(ArrayList<Employee> employees)
     {
-        if (emp != null)
-        {
-            System.out.println(
-                    emp.emp_no + " "
-                            + emp.first_name + " "
-                            + emp.last_name + "\n"
-                            + emp.title + "\n"
-                            + "Salary:" + emp.salary + "\n"
-                            + emp.dept_name + "\n"
-                            + "Manager: " + emp.manager + "\n");
-        }
+        if(employees != null && !employees.isEmpty()) {
+            for (Employee e : employees) {
+                if (e != null) {
+                    System.out.println(
+                            e.emp_no + ", "
+                            + e.first_name + " "
+                            + e.last_name + ", "
+                            + e.title + ", "
+                            + "Salary: " + e.salary + ", "
+                            + e.dept_name + ", "
+                            + "Manager: " + e.manager);
+                } else
+                    System.out.println("! e = null >> null occurrence in employees list");
+            }
+        } else
+            System.out.println("! employees list = null >> empty query result");
     }
 
     public Employee getEmployee(int ID)
@@ -100,8 +108,8 @@ public class App
             // Create string for SQL statement
             String strSelect =
                     "SELECT emp_no, first_name, last_name "
-                            + "FROM employees "
-                            + "WHERE emp_no = " + ID;
+                    + "FROM employees "
+                    + "WHERE emp_no = " + ID;
             // Execute SQL statement
             ResultSet rset = stmt.executeQuery(strSelect);
             // Return new employee if valid.
@@ -138,9 +146,9 @@ public class App
             // Create string for SQL statement
             String strSelect =
                     "SELECT employees.emp_no, employees.first_name, employees.last_name, salaries.salary "
-                            + "FROM employees, salaries "
-                            + "WHERE employees.emp_no = salaries.emp_no AND salaries.to_date = '9999-01-01' "
-                            + "ORDER BY employees.emp_no ASC";
+                    + "FROM employees, salaries "
+                    + "WHERE employees.emp_no = salaries.emp_no AND salaries.to_date = '9999-01-01' "
+                    + "ORDER BY employees.emp_no ASC";
             // Execute SQL statement
             ResultSet rset = stmt.executeQuery(strSelect);
             // Extract employee information
@@ -152,6 +160,44 @@ public class App
                 emp.first_name = rset.getString("employees.first_name");
                 emp.last_name = rset.getString("employees.last_name");
                 emp.salary = rset.getInt("salaries.salary");
+                employees.add(emp);
+            }
+            return employees;
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+            System.out.println("Failed to get salary details");
+            return null;
+        }
+    }
+
+    public static ArrayList<Employee> getSalariesByRole(String role) {
+        try
+        {
+            // Create an SQL statement
+            Statement stmt = con.createStatement();
+            // Create string for SQL statement
+            String query =
+                    "SELECT employees.emp_no, employees.first_name, employees.last_name, salaries.salary " +
+                    "FROM employees, salaries, titles " +
+                    "WHERE employees.emp_no = salaries.emp_no " +
+                    "AND employees.emp_no = titles.emp_no " +
+                    "AND salaries.to_date = '9999-01-01' " +
+                    "AND titles.to_date = '9999-01-01' " +
+                    "AND titles.title = '" + role + "' " +
+                    "ORDER BY employees.emp_no ASC";
+            // Execute SQL statement
+            ResultSet result = stmt.executeQuery(query);
+            // Extract employee information
+            ArrayList<Employee> employees = new ArrayList<Employee>();
+            while (result.next())
+            {
+                Employee emp = new Employee();
+                emp.emp_no = result.getInt("employees.emp_no");
+                emp.first_name = result.getString("employees.first_name");
+                emp.last_name = result.getString("employees.last_name");
+                emp.salary = result.getInt("salaries.salary");
                 employees.add(emp);
             }
             return employees;
